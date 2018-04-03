@@ -103,7 +103,6 @@ class Cryptonator:
 
         return ret & 255
 
-
     def byte_rot(self, path, encrypt=True):
 
         # Read file's bytes
@@ -151,6 +150,20 @@ class Cryptonator:
             self.byte_xor(path)
             self.byte_rot(path, encrypt)
 
+    def invert(self, path):
+
+        # Read file's bytes
+        f_bytes = []
+        with open(path, 'rb') as f:
+            f_bytes = f.read()
+
+        # Invert bytes
+        f_bytes = f_bytes[::-1]
+
+        # Output to same filepath
+        with open(path, 'wb') as f:
+            f.write(f_bytes)
+
     def eval(self):
         
         # Get current message
@@ -191,6 +204,8 @@ class Cryptonator:
                 self.byte_rot(path, False)
             elif command == 'byte xor':
                 self.byte_xor(path)
+            elif command == 'invert':
+                self.invert(path)
             elif command == 'byte rotxor encrypt':
                 self.byte_rot_xor(path)
             elif command == 'byte rotxor decrypt':
