@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os.path
 import socket
 import string
 import random
@@ -192,7 +193,9 @@ class Cryptonator:
         elif 'FILE:' in text:
             command = text.split(' FILE:')[0]
             path = text.split(' FILE:')[1]
-            print(command, path)
+
+            if not os.path.isfile(path):
+                return 3
 
             if command == 'bin rot encrypt':
                 self.bin_rot(path)
